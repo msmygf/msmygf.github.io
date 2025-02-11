@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="2.5-D Map Inpainting Using Mask Aware Transformer">
+  <meta name="keywords" content="Transformer, In-painting, Vision, Robotics, Planning">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Elevation Inpainting with MAT: Mask Aware Transformer</title>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/tire.png">
+  <link rel="stylesheet" href="./static/css/bal-slider.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/bal-slider.js"></script>
+  <script src="./static/js/index.js"></script>
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+
+      <div class="navbar-item has-dropdown is-hoverable">
+        <a class="navbar-link">
+          Related Links
+        </a>
+        <div class="navbar-dropdown">
+          <a class="navbar-item" href="https://github.com/fenglinglwb/MAT">
+            Original MAT Work
+          </a>
+          <a class="navbar-item" href="https://sites.google.com/view/cpsc8810-2024fall/home?authuser=0">
+            CPSC-8810
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">Elevation Inpainting with MAT: Mask Aware Transformer</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://github.com/benijohn">Benjamin Johnson</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="https://github.com/vasudevpurohit">Vasudev Purohit</a><sup>1</sup>,</span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>Clemson University - International Center for Automotive Research</span>
+          </div>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">CPSC-8810: Machine Learning Based Image Synthesis</span>
+          </div>
+          <br>
+          <div class="is-size-5 publication-authors">
+            <a href="https://cuicar.com/"> <img style="width:30%; padding-right: 15px;" src="./static/images/cuicar_logo.PNG"></a>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/vasudevpurohit/elevation_in_painting"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+              <span class="link-block">
+                <a href="./static/docs/CPSC_8810_Johnson_Purohit.pdf"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Report</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="./static/docs/CPSC_8810_Presentation_Johnson_Purohit.pdf"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Presentation</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <video id="teaser" autoplay muted loop playsinline height="100%">
+        <source src="./static/videos/motivation.mp4"
+                type="video/mp4">
+      </video>
+      <h2 class="subtitle has-text-centered">
+        A data-driven approach to predicting what is occluded might be a better solution, instead of assuming free or occupied space. Quantifying uncertainty for those predictions is equally important in decision making.
+      </h2>
+    </div>
+  </div>
+</section>
+
+
+<section class="hero is-light is-small">
+  <div class="hero-body">
+    <div class="container">
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item item-baseline">
+            <img src="./static/images/baseline.png" alt="Steve Image" style="width: 100%; height: auto;">
+        </div>
+        <div class="item item-ours_1">
+            <img src="./static/images/ours_1.png" alt="Steve Image" style="width: 100%; height: auto;">
+        </div>
+        <div class="item item-ours_2b">
+            <img src="./static/images/ours_2b.png" alt="Steve Image" style="width: 100%; height: auto;">
+        </div>
+        <div class="item item-ours_3">
+            <img src="./static/images/ours_3.png" alt="Steve Image" style="width: 100%; height: auto;">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Our research is offroad autonomy. In such, having a good understanding of the environment we are operating in is imperative
+            for a successfull mission. When observing an unknown cluttered environment, a robot often encounters large occlusions. In the
+            traditional planning paradigm, the missing data is either assumed occupied or free. This results in a motion plan that is either
+            unsafe or conservative at best. Hence, here we utilize a mask-aware transformer to fill in the missing data to obtain a more complete
+            map leading to better planning and safer outcomes.
+          </p>
+          <p>
+            In this project, we use a transformer-based model designed specifically for large-hole image inpainting. It seamlessly integrates 
+            the strengths of transformers and convolutions, enabling efficient processing of high-resolution images. 
+            Each component of this framework is crafted to ensure both high fidelity and diversity in the reconstructed images. 
+            At its core, it is a custom inpainting-oriented transformer block, featuring an attention mechanism that dynamically 
+            aggregates non-local information exclusively from valid tokens, as indicated by an adaptive mask.
+          </p>
+          <p>
+            Uncertainty prediction in inpainted images plays a critical role in enhancing the safety and reliability of decision-making processes, 
+            particularly in high-stakes applications like autonomous driving. When predictions are made in regions 
+            with missing or occluded data, understanding the confidence level of the inpainted content allows systems to assess the potential risks 
+            of relying on such information. We added this capability to the original work used here. The style manipulation module (SMM) enabled us
+            to generate an ensemble of inferences for the same input image. The disagreement between the inferred images allows us to estimate the uncertainty.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+
+<section class="section">
+  <div class="container is-max-desktop">
+
+    <div class="columns is-centered">
+
+      <!-- Ray tracing for masks -->
+      <div class="column">
+        <div class="content">
+          <h2 class="title is-3">Custom Masks</h2>
+          <p>
+            As opposed to the original work that utilized randomly generated masks, we used ray-tracing technique 
+            to generate two types of correlated masks - 360-deg masks and forward-facing masks, as shown below. 
+          </p>
+          <img src="./static/images/ray_tracing.png" alt="Steve Image" style="width: 100%; height: auto; display: block; margin: 0 auto;">
+        </div>
+      </div>
+      <!--/ Ray tracing for masks -->
+
+      <!-- Two types of Gaussian data for maps -->
+      <div class="column">
+        <h2 class="title is-3">Data</h2>
+        <div class="columns is-centered">
+          <div class="column content">
+            <p>
+                Two types of dataset were generated for this project. The first dataset 
+                features Gaussian blobs, while the second comprises clusters of Gaussian 
+                distributions designed to simulate elevation data.
+            </p>
+            <img src="./static/images/data.png" alt="Steve Image" style="width: 50%; height: 75%; display: block; margin: 0 auto;">
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <!--/ Two types of Gaussian data for maps -->  
+  </div>
+</section>
+
+<section class="section">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">Results</h2>
+      <h3 class="title is-4">Evaluation Metrics</h3>
+      <div class="columns is-centered">
+        <div class="column">
+          <div class="columns is-centered">
+            <div class="column content">
+              <img src="./static/images/evaluation_metric.png" alt="Graph for quality evaluation">
+            </div>
+        </div> 
+      </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column">
+          <div class="columns is-centered">
+            <div class="column content">
+              <img src="./static/images/metrics.png" alt="Graph for quality evaluation">
+            </div>
+        </div> 
+      </div>
+    </div>
+</section>
+
+<section class="section">
+    <!-- Sliders for inpainting -->
+    <div class="container is-max-desktop">
+        <h2 class="title is-4">In-paintings</h2>
+        <div class="content has-text-justified">
+          <p>
+      
+          </p>
+        </div>
+        <div class="columns is-centered">
+          <!-- Visual Effects. -->
+          <div class="column">
+            <div class="content">
+              <div class="columns is-centered">
+                <div class="column is-full-width">
+                  <div id="example1" class="bal-container-small">
+          
+                    <div class="bal-after">
+                      <img src="./static/images/baseline_inpainted.png">
+                      <div class="bal-afterPosition afterLabel" style="z-index:1;">
+                        Baseline
+                      </div>
+                    </div>
+                  
+                    <div class="bal-before" style="width:57.802547770700635%;">
+                      <div class="bal-before-inset" style="width: 628px;">
+                      <img src="./static/images/baseline_slider.png">
+                        <div class="bal-beforePosition beforeLabel">
+                          Ground Truth
+                        </div>
+                      </div>
+                    </div>
+                  
+                    <div class="bal-handle" style="left:57.802547770700635%;">
+                      <span class=" handle-left-arrow"></span>
+                      <span class="handle-right-arrow"></span>
+                    </div>
+                  
+                  </div>
+      
+      
+                  <div id="example2" class="bal-container-small">
+          
+                    <div class="bal-after">
+                      <img src="./static/images/ours1_inpainted.png">
+                      <div class="bal-afterPosition afterLabel" style="z-index:1;">
+                        Ours-1
+                      </div>
+                    </div>
+                  
+                    <div class="bal-before" style="width:98.2484076433121%;">
+                      <div class="bal-before-inset" style="width: 628px;">
+                      <img src="./static/images/ours1_gt.png">
+                        <div class="bal-beforePosition beforeLabel">
+                          Ground Truth
+                        </div>
+                      </div>
+                    </div>
+                  
+                    <div class="bal-handle" style="left:98.2484076433121%;">
+                      <span class=" handle-left-arrow"></span>
+                      <span class="handle-right-arrow"></span>
+                    </div>
+                  
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!--/ Visual Effects. -->
+      
+          <!-- Matting. -->
+          <div class="column">
+            <div class="columns is-centered">
+              <div class="column content">
+                
+                <div id="example4" class="bal-container-small">
+                  <div class="bal-after">
+                    <img src="./static/images/ours2b_inpainted.png">
+                    <div class="bal-afterPosition afterLabel" style="z-index:1;">
+                      Ours-2b
+                    </div>
+                  </div>
+                
+                  <div class="bal-before" style="width:2.8662420382165603%;">
+                    <div class="bal-before-inset" style="width: 628px;">
+                    <img src="./static/images/ours2b_gt.png">
+                      <div class="bal-beforePosition beforeLabel">
+                        Masked
+                      </div>
+                    </div>
+                  </div>
+                
+                  <div class="bal-handle" style="left:2.8662420382165603%;">
+                    <span class=" handle-left-arrow"></span>
+                    <span class="handle-right-arrow"></span>
+                  </div>
+                
+                </div>
+      
+                <div id="example5" class="bal-container-small">
+                  <div class="bal-after">
+                    <img src="./static/images/ours3_inpainted.png">
+                    <div class="bal-afterPosition afterLabel" style="z-index:1;">
+                      Ours-3
+                    </div>
+                  </div>
+                
+                  <div class="bal-before" style="width:22.452229299363058%;">
+                    <div class="bal-before-inset" style="width: 410px;">
+                    <img src="./static/images/ours3_gt.png">
+                      <div class="bal-beforePosition beforeLabel">
+                        Masked
+                      </div>
+                    </div>
+                  </div>
+                
+                  <div class="bal-handle" style="left:22.452229299363058%;">
+                    <span class=" handle-left-arrow"></span>
+                    <span class="handle-right-arrow"></span>
+                  </div>
+                
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+</section>
+
+<section class="section">
+    <!-- Sliders for inpainting -->
+    <div class="container is-max-desktop">
+        <h2 class="title is-4">Uncertainty Quantification</h2>
+        <div class="content has-text-justified">
+          <p>
+            The Style Manipulation Module (SMM) in the original mask-aware Transformer allowed us to quantify uncertainty in predictions. This module endows the framework with pluralistic generation by changing the weights normalization
+            of convulational layers in the reconstruction procedure with additional noise input. This was done to encourage diversity of generation. We utilized this module to generate an ensemble of outputs for the same input image. The
+            disagreement between the different outputs generated helps us quantify the statistics associated with the quality of in-painting: RMSE and variance.
+          </p>
+        </div>
+        <div class="columns is-centered">
+          <!-- Visual Effects. -->
+          <div class="column">
+            <div class="content">
+              <div class="columns is-centered">
+                <div class="column is-full-width">
+                  <div id="example6" class="bal-container-small">
+          
+                    <div class="bal-after">
+                      <img src="./static/images/uq_rmse_1.png">
+                      <div class="bal-afterPosition afterLabel" style="z-index:1;">
+                        RMSE
+                      </div>
+                    </div>
+                  
+                    <div class="bal-before" style="width:57.802547770700635%;">
+                      <div class="bal-before-inset" style="width: 628px;">
+                      <img src="./static/images/uq_gt1.png">
+                        <div class="bal-beforePosition beforeLabel">
+                          Ground Truth-1
+                        </div>
+                      </div>
+                    </div>
+                  
+                    <div class="bal-handle" style="left:57.802547770700635%;">
+                      <span class=" handle-left-arrow"></span>
+                      <span class="handle-right-arrow"></span>
+                    </div>
+                  
+                  </div>
+      
+      
+                  <div id="example7" class="bal-container-small">
+          
+                    <div class="bal-after">
+                      <img src="./static/images/uq_rmse_2.png">
+                      <div class="bal-afterPosition afterLabel" style="z-index:1;">
+                        RMSE
+                      </div>
+                    </div>
+                  
+                    <div class="bal-before" style="width:98.2484076433121%;">
+                      <div class="bal-before-inset" style="width: 628px;">
+                      <img src="./static/images/uq_gt2.png">
+                        <div class="bal-beforePosition beforeLabel">
+                          Ground Truth-2
+                        </div>
+                      </div>
+                    </div>
+                  
+                    <div class="bal-handle" style="left:98.2484076433121%;">
+                      <span class=" handle-left-arrow"></span>
+                      <span class="handle-right-arrow"></span>
+                    </div>
+                  
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!--/ Visual Effects. -->
+      
+          <!-- Matting. -->
+          <div class="column">
+            <div class="columns is-centered">
+              <div class="column content">
+                
+                <div id="example8" class="bal-container-small">
+                  <div class="bal-after">
+                    <img src="./static/images/uq_var_1.png">
+                    <div class="bal-afterPosition afterLabel" style="z-index:1;">
+                      Variance
+                    </div>
+                  </div>
+                
+                  <div class="bal-before" style="width:2.8662420382165603%;">
+                    <div class="bal-before-inset" style="width: 628px;">
+                    <img src="./static/images/uq_gt1.png">
+                      <div class="bal-beforePosition beforeLabel">
+                        Ground Truth-1
+                      </div>
+                    </div>
+                  </div>
+                
+                  <div class="bal-handle" style="left:2.8662420382165603%;">
+                    <span class=" handle-left-arrow"></span>
+                    <span class="handle-right-arrow"></span>
+                  </div>
+                
+                </div>
+      
+                <div id="example9" class="bal-container-small">
+                  <div class="bal-after">
+                    <img src="./static/images/uq_var_2.png">
+                    <div class="bal-afterPosition afterLabel" style="z-index:1;">
+                      Variance
+                    </div>
+                  </div>
+                
+                  <div class="bal-before" style="width:22.452229299363058%;">
+                    <div class="bal-before-inset" style="width: 410px;">
+                    <img src="./static/images/uq_gt2.png">
+                      <div class="bal-beforePosition beforeLabel">
+                        Ground Truth-2
+                      </div>
+                    </div>
+                  </div>
+                
+                  <div class="bal-handle" style="left:22.452229299363058%;">
+                    <span class=" handle-left-arrow"></span>
+                    <span class="handle-right-arrow"></span>
+                  </div>
+                
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+</section>
+
+
+<!-- Bibliography -->
+<section id="references">
+    <h3 class="title is-4">Bibliogrpahy</h3>
+    <ul>
+      <li>
+        [1] Han, Y., Xia, Y., Qi, G. J., & Campbell, M. (2023, March). Planning Paths through Occlusions in Urban Environments. In Conference on Robot Learning (pp. 266-275). PMLR. 
+        <a href="https://arxiv.org/abs/2212.14138" target="_blank">[arXiv]</a>
+      </li>
+      <li>
+        [2] Wang, L., Ye, H., Wang, Q., Gao, Y., Xu, C., & Gao, F. (2021, September). Learning-based 3d occupancy prediction for autonomous navigation in occluded environments. In 2021 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) (pp. 4509-4516). IEEE. 
+        <a href="https://arxiv.org/abs/2011.03981" target="_blank">[arXiv]</a>
+      </li>
+      <li>
+        [3] Stölzle, M., Miki, T., Gerdes, L., Azkarate, M., & Hutter, M. (2022). Reconstructing occluded elevation information in terrain maps with self-supervised learning. IEEE Robotics and Automation Letters, 7(2), 1697-1704.
+        <a href="https://arxiv.org/abs/2109.07150" target="_blank">[arXiv]</a>
+      </li>
+      <li>
+        [4] Hüllermeier, E., & Waegeman, W. (2021). Aleatoric and epistemic uncertainty in machine learning: An introduction to concepts and methods. Machine learning, 110(3), 457-506.
+        <a href="https://arxiv.org/abs/1910.09457" target="_blank">[arXiv]</a>
+      </li>
+      <li>
+        [5] Li, W., Lin, Z., Zhou, K., Qi, L., Wang, Y., & Jia, J. (2022). Mat: Mask-aware transformer for large hole image inpainting. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition (pp. 10758-10768).
+        <a href="https://arxiv.org/abs/2203.15270" target="_blank">[arXiv]</a>
+      </li>
+    </ul>
+  </section>
+<!-- Bibliography -->
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <a class="icon-link" href="https://github.com/vasudevpurohit/elevation_in_painting" class="external-link" disabled>
+        <i class="fab fa-github"></i>
+      </a>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <p>
+            This means you are free to borrow the <a
+              href="https://github.com/inpaint-elevation/inpaint-elevation.github.io">source code</a> of this website,
+            we just ask that you link back to this page in the footer.
+            Please remember to remove the analytics code included in the header of the website which
+            you do not want on your website.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="./static/js/script.js"></script>
+
+<script>
+    new BeforeAfter({
+        id: '#example1'
+    });
+    new BeforeAfter({
+        id: '#example2'
+    });
+    new BeforeAfter({
+        id: '#example4'
+    });
+    new BeforeAfter({
+        id: '#example5'
+    });
+    new BeforeAfter({
+        id: '#example6'
+    });
+    new BeforeAfter({
+        id: '#example7'
+    });
+    new BeforeAfter({
+        id: '#example8'
+    });
+    new BeforeAfter({
+        id: '#example9'
+    });
+
+</script>
+
+</body>
+</html>
